@@ -44,7 +44,7 @@ protected:
 
 public:
   basic_lambda_enabler(F_FUNC target) : m_target(target) {}
-  template <typename ...LARGS> auto prepare(LARGS ...largs) const {
+  template <typename ...LARGS> auto prepare(LARGS&& ...largs) const {
     struct p {
       const std::function <F_RES(void*, CB_F_TYPE)> f;
       void call(CB_FUNC callback) {
