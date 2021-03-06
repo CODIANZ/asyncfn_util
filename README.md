@@ -86,3 +86,55 @@ asyncfn({1, 2}, [=]((/* void* */ auto, /* int */ auto n){
 * 第１引数 ```{1, 2}``` は```asyncfunc()```　の　```refcon``` と ```callback``` を除いたパラメータ。
 * 第２引数はコールバック関数。
 
+## observablify
+
+### 機能
+
+関数ポインタを引数に取る非同期関数を rx の observable に変換する。
+
+### 動作条件
+
+ lambda_enabler と同様
+
+### 使用方法
+
+下記のような非同期関数 ```asyncfunc()``` を想定する。
+
+```cpp
+extern "C" void asyncfunc(int p1, int p2, void* refcon, void(*callback)(void*, int));
+```
+
+* ```callback``` の第１引数は ```refcon```。
+* ```callback``` の第２引数は非同期関数により得られる何らかの数値。
+
+#### コンストラクタ
+
+```cpp
+auto asyncfn = observablify<0, decltype(asyncfunc)>(asyncfunc);
+```
+
+```0``` は、 ```asyncfunc()``` の引数で```refcon``` が```0```番目の引数という指定。
+
+#### 非同期関数の実行
+
+```cpp
+int i = 100;
+observablify.rx(1, 2)
+.subscribe([=](/* std::tuple<void*, int> */auto r){
+  std::cout << i + std::get<1>(r);
+});
+```
+
+```rx() ``` に ```asyncfunc()```　の　```refcon``` と ```callback``` を除いたパラメータを渡すことで observable が生成されます。コールバック関数が呼び出されると、パラメータを ```std::tuple``` にしたものを発行しコンプリートします。（エラー発行しません）
+
+#### 非同期関数の実行（C++17以降）
+
+```cpp
+int i = 100;
+observablify.rx({1, 2}) /* std::tuple<int, int> */
+.subscribe([=](/* std::tuple<void*, int> */auto r){
+  std::cout << i + std::get<1>(r);
+});
+```
+
+```rx() ``` に ```asyncfunc()```　の　```refcon``` と ```callback``` を除いたパラメータを```std::tuple```にして渡すことで observable が生成されます。コールバック関数が呼び出されると、パラメータを ```std::tuple``` にしたものを発行しコンプリートします。（エラー発行しません）
