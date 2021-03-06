@@ -37,7 +37,10 @@ protected:
   using OP_F_ARGS   = typename pick<F_ARGS_COUNT - 2, ARGS...>::types;
 
 private:
-  F_FUNC m_target;
+  const F_FUNC m_target;
+
+protected:
+  F_FUNC target() const { return m_target; }
 
 public:
   basic_lambda_enabler(F_FUNC target) : m_target(target) {}
@@ -49,7 +52,7 @@ public:
         f(sfn.refcon(), sfn.callback());
       }
     };
-    return p{ .f = std::bind(m_target, largs..., std::placeholders::_1, std::placeholders::_2)};
+    return p{ .f = std::bind(target(), largs..., std::placeholders::_1, std::placeholders::_2)};
   }
 
 #if __cplusplus >= 201703L
@@ -57,7 +60,7 @@ public:
     STATICIFY sfn(callback);
     auto refcon_callback = std::tuple<REFCON_TYPE, CB_F_TYPE>(reinterpret_cast<REFCON_TYPE>(sfn.refcon()), sfn.callback());
     auto params = std::tuple_cat(args, refcon_callback);
-    std::apply(m_target, params);
+    std::apply(target(), params);
   }
 #endif
 };
