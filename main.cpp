@@ -3,7 +3,7 @@
 #include <chrono>
 #include <sstream>
 
-#include "lambda_enabler.h"
+#include <asyncfn_util/lambda_enabler.h>
 
 using namespace asyncfn_util;
 
