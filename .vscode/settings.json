@@ -44,6 +44,20 @@
     "functional": "cpp",
     "iterator": "cpp",
     "ratio": "cpp",
-    "thread": "cpp"
+    "thread": "cpp",
+    "bitset": "cpp",
+    "complex": "cpp",
+    "condition_variable": "cpp",
+    "cstring": "cpp",
+    "list": "cpp",
+    "unordered_set": "cpp",
+    "map": "cpp",
+    "numeric": "cpp",
+    "random": "cpp",
+    "regex": "cpp",
+    "set": "cpp",
+    "future": "cpp",
+    "iomanip": "cpp",
+    "mutex": "cpp"
   }
 }
