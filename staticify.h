@@ -6,12 +6,10 @@
 
 namespace asyncfn_util {
 
-template <int N, typename FUNCTION> class staticify;
-
 template <int N, typename RESULT, typename ...ARGS>
-  class staticify<N, RESULT (*) (ARGS...)>
+  class basic_staticify
 {
-public:
+protected:
   using F_RES   = RESULT;
   using F_ARGS  = std::tuple<ARGS...>;
   using F_FUNC  = std::function<RESULT(ARGS...)>;
@@ -26,16 +24,47 @@ private:
 
   static F_RES sfunc(ARGS ...args){
     auto params = std::tuple<ARGS...>(args...);
-    auto w = reinterpret_cast<wrap_t*>(std::get<N>(params));
-    auto f = w->f;
-    delete w;
+    auto refcon = std::get<N>(params);
+    auto f = refconToWrap(refcon)->f;
+    discardRefcon(refcon);
     return f(args...);
   } 
 
+  static wrap_t* refconToWrap(void* refcon){
+    return reinterpret_cast<wrap_t*>(refcon);
+  }
+
 public:
-  staticify(F_FUNC f): m_func(f) {}
-  void* refcon() { return new wrap_t{ .f = m_func }; }
+  basic_staticify(F_FUNC f): m_func(f) {}
+  void* refcon() const { return new wrap_t{ .f = m_func }; }
   static F_TYPE* callback() { return &sfunc; }
+
+  static void discardRefcon(void* refcon) {
+    delete reinterpret_cast<wrap_t*>(refcon);
+  }
+};
+
+template <int N, typename T> class staticify;
+
+template<int N, typename RESULT, typename ...ARGS>
+  struct staticify<N, RESULT(ARGS...)> : public basic_staticify<N, RESULT, ARGS...>
+{
+  staticify(typename basic_staticify<N, RESULT, ARGS...>::F_FUNC f) :
+    basic_staticify<N, RESULT, ARGS...>(f) {}
+};
+
+template<int N, typename RESULT, typename ...ARGS>
+  struct staticify<N, RESULT(*)(ARGS...)> : public basic_staticify<N, RESULT, ARGS...>
+{
+  staticify(typename basic_staticify<N, RESULT, ARGS...>::F_FUNC f) :
+    basic_staticify<N, RESULT, ARGS...>(f) {}
+};
+
+template<int N, typename RESULT, typename ...ARGS>
+  struct staticify<N, RESULT(&)(ARGS...)> : public basic_staticify<N, RESULT, ARGS...>
+{
+  staticify(typename basic_staticify<N, RESULT, ARGS...>::F_FUNC f) :
+    basic_staticify<N, RESULT, ARGS...>(f) {}
 };
 
 } /* using asyncfn_util */

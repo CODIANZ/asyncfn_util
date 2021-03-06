@@ -12,11 +12,10 @@
 
 namespace asyncfn_util {
 
-template <int N, typename FUNCTION> class lambda_enabler;
-
 template <int N, typename RESULT, typename ...ARGS>
-  class lambda_enabler<N, RESULT (ARGS...)>
+  class basic_lambda_enabler
 {
+protected:
   using F_RES       = RESULT;
   using F_ARGS      = std::tuple<ARGS...>;
   using F_FUNC      = std::function<RESULT(ARGS...)>;
@@ -35,12 +34,13 @@ template <int N, typename RESULT, typename ...ARGS>
   static_assert(std::is_pointer<REFCON_TYPE>::value == true);
   static_assert(std::is_function<typename fntype<CB_F_TYPE>::type>::value == true);
 
-  F_FUNC m_target;
-
   using OP_F_ARGS   = typename pick<F_ARGS_COUNT - 2, ARGS...>::types;
 
+private:
+  F_FUNC m_target;
+
 public:
-  lambda_enabler(F_FUNC target) : m_target(target) {}
+  basic_lambda_enabler(F_FUNC target) : m_target(target) {}
   template <typename ...LARGS> auto prepare(LARGS ...largs) const {
     struct p {
       const std::function <F_RES(void*, CB_F_TYPE)> f;
@@ -60,6 +60,29 @@ public:
     std::apply(m_target, params);
   }
 #endif
+};
+
+template <int N, typename FUNCTION> class lambda_enabler;
+
+template <int N, typename RESULT, typename ...ARGS>
+  struct lambda_enabler<N, RESULT(ARGS...)> : public basic_lambda_enabler<N, RESULT, ARGS...>
+{
+  lambda_enabler(typename basic_lambda_enabler<N, RESULT, ARGS...>::F_FUNC target) :
+    basic_lambda_enabler<N, RESULT, ARGS...>(target) {}
+};
+
+template <int N, typename RESULT, typename ...ARGS>
+  struct lambda_enabler<N, RESULT(*)(ARGS...)> : public basic_lambda_enabler<N, RESULT, ARGS...>
+{
+  lambda_enabler(typename basic_lambda_enabler<N, RESULT, ARGS...>::F_FUNC target) :
+    basic_lambda_enabler<N, RESULT, ARGS...>(target) {}
+};
+
+template <int N, typename RESULT, typename ...ARGS>
+  struct lambda_enabler<N, RESULT(&)(ARGS...)> : public basic_lambda_enabler<N, RESULT, ARGS...>
+{
+  lambda_enabler(typename basic_lambda_enabler<N, RESULT, ARGS...>::F_FUNC target) :
+    basic_lambda_enabler<N, RESULT, ARGS...>(target) {}
 };
 
 } /* namespace asyncfn_util */
