@@ -14,6 +14,7 @@ set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
+target_include_directories(asyncfn_util PRIVATE ./RxCpp/Rx/v2/src)
 target_include_directories(asyncfn_util PRIVATE ./src)
 
 find_package(Threads REQUIRED)
