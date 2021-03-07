@@ -63,7 +63,7 @@ void test3()
   std::cout << "begin test3()" << std::endl;
 
   auto rxfn = observablify<0, decltype(asyncfunc)>(asyncfunc);
-  rxcpp::observable<>::range(0, 9, rxcpp::observe_on_new_thread())
+  rxcpp::observable<>::range(0, 9)
   .flat_map([=](auto n){
     return rxfn.rx(n + 1, n + 3)
     .map([=](auto r){
@@ -85,7 +85,7 @@ void test4()
 
 #if __cplusplus >= 201703L  
   auto rxfn = observablify<0, decltype(asyncfunc)>(asyncfunc);
-  rxcpp::observable<>::range(0, 9, rxcpp::observe_on_new_thread())
+  rxcpp::observable<>::range(0, 9)
   .flat_map([=](auto n){
     return rxfn.rx({n + 1, n + 3})
     .map([=](auto r){
