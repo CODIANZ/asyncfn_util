@@ -1,6 +1,37 @@
 # 非同期関数ユーティリティ
 
-```関数ポインタ```を受け取る非同期関数をC++で扱いやすくするための機能を提供します。
+```関数ポインタ```を受け取る非同期関数をC++で取り扱いやすくするための機能を提供します。
+
+## 開発に至った動機
+
+下記のような、```関数ポインタ```を引数に取る非同期関数があります。
+
+```cpp
+extern "C" void asyncfunc(int p1, int p2, void* refcon, void(*callback)(void*, int));
+```
+
+なお、```refcon``` は非同期関数 ```asyncfunc()``` がコールバック関数```callback```を呼び出す際にそのまま透過して引数に透過します。そして、コールバック関数は非同期関数を呼び出した際の ```refcon``` を得られます。一般的にはこの ```refcon``` に何らかのオブジェクトインスタンスへのポインタを渡すことが多いと思います。
+
+ところで、下記のラムダ式は問題なくコンパイルも動作します。
+
+```cpp
+asyncfunc(1, 2, nullptr, [](void*, int resp){
+  const int n = 10;
+  std::cout << resp * n << std::endl;
+});
+```
+
+しかし、ラムダ導入子を追加するとコンパイルエラーとなります。
+
+```cpp
+const int n = 10;
+asyncfunc(1, 2, nullptr, [=](void*, int resp){
+   std::cout << resp * n << std::endl;
+});
+```
+
+そこで、```関数ポインタ```を受けるタイプの非同期関数で、ラムダ導入子を有するラムダ式を使えるようにしたいというのが、この ```asyncfn_util``` の開発動機になります。
+
 
 ## lambda_enabler
 
@@ -129,36 +160,6 @@ int main(void){
   });
 }
 ```
-
-###　開発に至った背景や経緯
-
-下記のような、```関数ポインタ```を引数に取る非同期関数があります。
-
-```cpp
-extern "C" void asyncfunc(int p1, int p2, void* refcon, void(*callback)(void*, int));
-```
-
-なお、```refcon``` は非同期関数 ```asyncfunc()``` がコールバック関数```callback```を呼び出す際にそのまま透過して引数に透過するもので、コールバック関数は非同期関数を呼び出した際の ```refcon``` を得られます。
-
-ところで、下記のラムダ式は問題なくコンパイルも動作します。
-
-```cpp
-asyncfunc(1, 2, nullptr, [](void*, int resp){
-  const int n = 10;
-  std::cout << resp * n << std::endl;
-});
-```
-
-しかし、ラムダ導入子を追加するとコンパイルエラーとなります。
-
-```cpp
-const int n = 10;
-asyncfunc(1, 2, nullptr, [=](void*, int resp){
-   std::cout << resp * n << std::endl;
-});
-```
-
-ここで、ラムダ導入子を有するラムダ式を使えるようにしたいというのが開発の動機になります。
 
 ### 動作条件
 
