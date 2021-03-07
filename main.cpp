@@ -8,24 +8,21 @@
 
 using namespace asyncfn_util;
 
-extern "C" void asyncfunc(int p1, int p2, void* refcon, void(*callback)(void*, int)) {
-  /* leaks the memory! but it's a test code :P */
-  new std::thread([=](){
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-    callback(refcon, p1 + p2);
-  });
-}
-
-void test1()
+template <rcorder RC_ORDER, refconpos REFCON_POS, typename F> void test1(F func)
 {
-  std::cout << "begin test1()" << std::endl;
+  std::cout << "begin test1<"
+            << (RC_ORDER == rcorder::rc ? "rc" : "cr") << ","
+            << (REFCON_POS == refconpos::first ? "first" : "last")
+            << ">()" << std::endl;
 
-  auto asyncfn = lambda_enabler<0, decltype(asyncfunc)>(asyncfunc);
+  auto asyncfn = lambda_enabler<RC_ORDER, REFCON_POS, decltype(func)>(func);
 
   for(auto i = 0; i < 10; i++){
-    asyncfn.prepare(i + 1, i + 3).call([=](auto, auto n){
+    asyncfn.prepare(i + 1, i + 3).call([=](auto ...n){
+      const auto nn = std::make_tuple(n...);
+      const auto nnn = REFCON_POS == refconpos::first ? 1 : 0;
       std::stringstream ss;
-      ss << n * i << std::endl;
+      ss << (std::get<nnn>(nn) * i) << std::endl;
       std::cout << ss.str();
     });
   }
@@ -35,17 +32,22 @@ void test1()
   std::cout << "end test1()" << std::endl;
 }
 
-void test2()
+template <rcorder RC_ORDER, refconpos REFCON_POS, typename F> void test2(F func)
 {
-  std::cout << "begin test2()" << std::endl;
+  std::cout << "begin test2<"
+            << (RC_ORDER == rcorder::rc ? "rc" : "cr") << ","
+            << (REFCON_POS == refconpos::first ? "first" : "last")
+            << ">()" << std::endl;
 
 #if __cplusplus >= 201703L  
-  auto asyncfn = lambda_enabler<0, decltype(asyncfunc)>(asyncfunc);
+  auto asyncfn = lambda_enabler<RC_ORDER, REFCON_POS, decltype(func)>(func);
 
   for(auto i = 0; i < 10; i++){
-    asyncfn({i + 1, i + 3}, [=](auto, auto n){
+    asyncfn({i + 1, i + 3}, [=](auto ...n){
+      const auto nn = std::make_tuple(n...);
+      const auto nnn = REFCON_POS == refconpos::first ? 1 : 0;
       std::stringstream ss;
-      ss << n * i << std::endl;
+      ss << (std::get<nnn>(nn) * i) << std::endl;
       std::cout << ss.str();
     });
   }
@@ -58,16 +60,20 @@ void test2()
   std::cout << "end test2()" << std::endl;
 }
 
-void test3()
+template <rcorder RC_ORDER, refconpos REFCON_POS, typename F> void test3(F func)
 {
-  std::cout << "begin test3()" << std::endl;
+  std::cout << "begin test3<"
+            << (RC_ORDER == rcorder::rc ? "rc" : "cr") << ","
+            << (REFCON_POS == refconpos::first ? "first" : "last")
+            << ">()" << std::endl;
 
-  auto rxfn = observablify<0, decltype(asyncfunc)>(asyncfunc);
+  auto rxfn = observablify<RC_ORDER, REFCON_POS, decltype(func)>(func);
   rxcpp::observable<>::range(0, 9)
   .flat_map([=](auto n){
     return rxfn.rx(n + 1, n + 3)
     .map([=](auto r){
-      return std::get<1>(r) * n;
+      const auto nnn = REFCON_POS == refconpos::first ? 1 : 0;
+      return std::get<nnn>(r) * n;
     }).as_dynamic();
   }).as_dynamic()
   .subscribe([](auto x){
@@ -79,17 +85,21 @@ void test3()
   std::cout << "end test3()" << std::endl;
 }
 
-void test4()
+template <rcorder RC_ORDER, refconpos REFCON_POS, typename F> void test4(F func)
 {
-  std::cout << "begin test4()" << std::endl;
+  std::cout << "begin test4<"
+            << (RC_ORDER == rcorder::rc ? "rc" : "cr") << ","
+            << (REFCON_POS == refconpos::first ? "first" : "last")
+            << ">()" << std::endl;
 
 #if __cplusplus >= 201703L  
-  auto rxfn = observablify<0, decltype(asyncfunc)>(asyncfunc);
+  auto rxfn = observablify<RC_ORDER, REFCON_POS, decltype(func)>(func);
   rxcpp::observable<>::range(0, 9)
   .flat_map([=](auto n){
     return rxfn.rx({n + 1, n + 3})
     .map([=](auto r){
-      return std::get<1>(r) * n;
+      const auto nnn = REFCON_POS == refconpos::first ? 1 : 0;
+      return std::get<nnn>(r) * n;
     }).as_dynamic();
   }).as_dynamic()
   .subscribe([](auto x){
@@ -104,9 +114,29 @@ void test4()
   std::cout << "end test4()" << std::endl;
 }
 
+extern "C" void asyncfunc(int p1, int p2, void* refcon, void(*callback)(void*, int)) {
+  /* leaks the memory! but it's a test code :P */
+  new std::thread([=](){
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    callback(refcon, p1 + p2);
+  });
+}
+
+extern "C" void asyncfunc2(int p1, int p2, void(*callback)(int, void*), void* refcon) {
+  new std::thread([=](){
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    callback(p1 + p2, refcon);
+  });
+}
+
 int main(int, char**) {
-  test1();
-  test2();
-  test3();
-  test4();
+  test1<rcorder::rc, refconpos::first>(asyncfunc);
+  test2<rcorder::rc, refconpos::first>(asyncfunc);
+  test3<rcorder::rc, refconpos::first>(asyncfunc);
+  test4<rcorder::rc, refconpos::first>(asyncfunc);
+
+  test1<rcorder::cr, refconpos::last>(asyncfunc2);
+  test2<rcorder::cr, refconpos::last>(asyncfunc2);
+  test3<rcorder::cr, refconpos::last>(asyncfunc2);
+  test4<rcorder::cr, refconpos::last>(asyncfunc2);
 }
