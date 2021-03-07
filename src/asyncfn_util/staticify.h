@@ -6,7 +6,9 @@
 
 namespace asyncfn_util {
 
-template <int N, typename RESULT, typename ...ARGS>
+enum class refconpos { first, last };
+
+template <refconpos REFCON_POS, typename RESULT, typename ...ARGS>
   class basic_staticify
 {
 protected:
@@ -14,6 +16,8 @@ protected:
   using F_ARGS  = std::tuple<ARGS...>;
   using F_FUNC  = std::function<RESULT(ARGS...)>;
   using F_TYPE  = RESULT(ARGS...);
+  static constexpr auto F_ARGS_COUNT = std::tuple_size<F_ARGS>::value;
+  static constexpr auto REFCON_INDEX = REFCON_POS == refconpos::first ? 0 : F_ARGS_COUNT -1;
 
 private:
   struct wrap_t {
@@ -24,7 +28,7 @@ private:
 
   static F_RES sfunc(ARGS ...args){
     auto params = std::tuple<ARGS...>(args...);
-    auto refcon = std::get<N>(params);
+    auto refcon = std::get<REFCON_INDEX>(params);
     auto f = refconToWrap(refcon)->f;
     discardRefcon(refcon);
     return f(args...);
@@ -44,27 +48,27 @@ public:
   }
 };
 
-template <int N, typename T> class staticify;
+template <refconpos REFCON_POS, typename T> class staticify;
 
-template<int N, typename RESULT, typename ...ARGS>
-  struct staticify<N, RESULT(ARGS...)> : public basic_staticify<N, RESULT, ARGS...>
+template<refconpos REFCON_POS, typename RESULT, typename ...ARGS>
+  struct staticify<REFCON_POS, RESULT(ARGS...)> : public basic_staticify<REFCON_POS, RESULT, ARGS...>
 {
-  staticify(typename basic_staticify<N, RESULT, ARGS...>::F_FUNC f) :
-    basic_staticify<N, RESULT, ARGS...>(f) {}
+  staticify(typename basic_staticify<REFCON_POS, RESULT, ARGS...>::F_FUNC f) :
+    basic_staticify<REFCON_POS, RESULT, ARGS...>(f) {}
 };
 
-template<int N, typename RESULT, typename ...ARGS>
-  struct staticify<N, RESULT(*)(ARGS...)> : public basic_staticify<N, RESULT, ARGS...>
+template<refconpos REFCON_POS, typename RESULT, typename ...ARGS>
+  struct staticify<REFCON_POS, RESULT(*)(ARGS...)> : public basic_staticify<REFCON_POS, RESULT, ARGS...>
 {
-  staticify(typename basic_staticify<N, RESULT, ARGS...>::F_FUNC f) :
-    basic_staticify<N, RESULT, ARGS...>(f) {}
+  staticify(typename basic_staticify<REFCON_POS, RESULT, ARGS...>::F_FUNC f) :
+    basic_staticify<REFCON_POS, RESULT, ARGS...>(f) {}
 };
 
-template<int N, typename RESULT, typename ...ARGS>
-  struct staticify<N, RESULT(&)(ARGS...)> : public basic_staticify<N, RESULT, ARGS...>
+template<refconpos REFCON_POS, typename RESULT, typename ...ARGS>
+  struct staticify<REFCON_POS, RESULT(&)(ARGS...)> : public basic_staticify<REFCON_POS, RESULT, ARGS...>
 {
-  staticify(typename basic_staticify<N, RESULT, ARGS...>::F_FUNC f) :
-    basic_staticify<N, RESULT, ARGS...>(f) {}
+  staticify(typename basic_staticify<REFCON_POS, RESULT, ARGS...>::F_FUNC f) :
+    basic_staticify<REFCON_POS, RESULT, ARGS...>(f) {}
 };
 
 } /* using asyncfn_util */
