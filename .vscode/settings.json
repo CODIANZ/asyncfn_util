@@ -58,6 +58,7 @@
     "set": "cpp",
     "future": "cpp",
     "iomanip": "cpp",
-    "mutex": "cpp"
+    "mutex": "cpp",
+    "variant": "cpp"
   }
 }
