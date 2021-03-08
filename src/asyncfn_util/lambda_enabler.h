@@ -36,10 +36,10 @@ protected:
   using STATICIFY   = staticify<REFCON_POS, CB_F_TYPE>;
   using CB_FUNC     = std::function<typename fntype<CB_F_TYPE>::type>;
 
-  static_assert(std::is_pointer<REFCON_TYPE>::value == true);
-  static_assert(std::is_function<typename fntype<CB_F_TYPE>::type>::value == true);
+  static_assert(std::is_pointer<REFCON_TYPE>::value, "not a pinter");
+  static_assert(std::is_function<typename fntype<CB_F_TYPE>::type>::value, "not a function");
 
-  using OP_F_ARGS   = typename pick<F_ARGS_COUNT - 2, ARGS...>::types;
+  using OP_F_ARGS   = typename pickargs<F_ARGS_COUNT - 2, ARGS...>::type;
 
 private:
   const F_FUNC m_target;
