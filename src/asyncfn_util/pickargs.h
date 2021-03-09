@@ -5,38 +5,35 @@
 
 namespace asyncfn_util {
 
-template <std::size_t, std::size_t, typename ...> struct pickargs_impl;
+template <std::size_t N, std::size_t I, typename ...T> struct pickargs_impl;
 
-/* I < N */
-template <std::size_t N, std::size_t I, typename ...FARGS, typename T, typename ...ARGS>
-  struct pickargs_impl<N, I, std::tuple<FARGS...>, std::tuple<>, T, ARGS...> :
-    pickargs_impl<N, I + 1, std::tuple<FARGS..., T>, std::tuple<>, ARGS...> {};
+template <std::size_t N, std::size_t I, typename ...FRONT, typename T, typename ...ARGS>
+  struct pickargs_impl<N, I, std::tuple<FRONT...>, std::tuple<>, T, ARGS...> :
+    std::conditional<
+      I == N,
+      pickargs_impl<N, I + 1, std::tuple<FRONT...>, std::tuple<T, ARGS...>>,
+      pickargs_impl<N, I + 1, std::tuple<FRONT..., T>, std::tuple<>, ARGS...>
+    >::type {};
 
-/* I > N */
-template <std::size_t N, std::size_t I, typename ...FARGS, typename BT, typename ...BARGS, typename T, typename ...ARGS>
-  struct pickargs_impl<N, I, std::tuple<FARGS...>, std::tuple<BT, BARGS...>, T, ARGS...> :
-    pickargs_impl<N, I + 1, std::tuple<FARGS...>, std::tuple<BT, BARGS..., T>, ARGS...> {};
-
-/* I == N */
-template <std::size_t N, typename ...FARGS, typename T, typename ...ARGS>
-  struct pickargs_impl<N, N, std::tuple<FARGS...>, std::tuple<>, T, ARGS...> :
-    pickargs_impl<N, N + 1, std::tuple<FARGS...>, std::tuple<T>, ARGS...> {};
-  
-/* last */
-template <std::size_t N, std::size_t I, typename ...FARGS, typename ...BARGS>
-  struct pickargs_impl<N, I, std::tuple<FARGS...>, std::tuple<BARGS...>>
+template <std::size_t N, std::size_t I, typename ...FRONT, typename ...BACK>
+  struct pickargs_impl<N, I, std::tuple<FRONT...>, std::tuple<BACK...>>
 {
-  using type  = std::tuple<FARGS...>;
-  using after = std::tuple<BARGS...>;
+  using front = typename std::tuple<FRONT...>;
+  using back  = typename std::tuple<BACK...>;
 };
 
-template <std::size_t N, typename ...ARGS>
-  struct pickargs :
-    pickargs_impl<N, 0, std::tuple<>, std::tuple<>, ARGS...> {};
+template <std::size_t N, typename ...ARGS> struct pickargs
+{
+  static_assert(N > 0, "N <= 0");
+  static_assert(N <= std::tuple_size<std::tuple<ARGS...>>::value, "N > ARGS");
+  using type = typename pickargs_impl<N, 0, std::tuple<>, std::tuple<>, ARGS...>::front;
+};
 
-template <int N, typename ...ARGS> struct pickargs_r {
-  using before  = typename pickargs<std::tuple_size<std::tuple<ARGS...>>::value - N, ARGS...>::type;
-  using type    = typename pickargs<std::tuple_size<std::tuple<ARGS...>>::value - N, ARGS...>::after;
+template <std::size_t N, typename ...ARGS> struct pickargs_r
+{
+  static_assert(N > 0, "N <= 0");
+  static_assert(N <= std::tuple_size<std::tuple<ARGS...>>::value, "N > ARGS");
+  using type = typename pickargs_impl<std::tuple_size<std::tuple<ARGS...>>::value - N, 0, std::tuple<>, std::tuple<>, ARGS...>::back;
 };
 
 } /* namespace asyncfn_util */
