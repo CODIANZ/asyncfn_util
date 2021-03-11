@@ -11,10 +11,11 @@ add_executable(asyncfn_util
   tests/sample_async_function.cpp
   tests/lambda_enabler.cpp
   tests/observablify.cpp
+  tests/ppack.cpp
 )
 
 set_target_properties(asyncfn_util PROPERTIES
-  CXX_STANDARD 17
+  CXX_STANDARD 14
 )
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

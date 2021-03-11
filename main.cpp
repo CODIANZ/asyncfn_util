@@ -5,4 +5,5 @@ int main(int, char**) {
   test_pickargs();
   test_lambda_enabler();
   test_observablify();
+  test_ppack();
 }
